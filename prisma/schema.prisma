@@ -1,0 +1,82 @@
+// Shopify Store MCP - Prisma Schema
+// SQLite database for operation logging, configuration, and background jobs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// STORE CONFIGURATION
+// ============================================================================
+
+// Store configuration per shop (rate limit tier, settings)
+model StoreConfig {
+  id           String   @id @default(uuid())
+  storeDomain  String   @unique
+  tier         String   @default("STANDARD") // STANDARD, ADVANCED, PLUS, ENTERPRISE
+  autoDetected Boolean  @default(false)
+  shopName     String?
+  shopPlan     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================================================
+// OPERATION LOGGING
+// ============================================================================
+
+// Logs every GraphQL operation for debugging and history
+model OperationLog {
+  id            String   @id @default(uuid())
+  storeDomain   String
+  sessionId     String   // MCP session identifier
+  toolName      String   // Tool that was called
+  operationType String   // "query" | "mutation"
+  query         String   // GraphQL query (may be truncated)
+  variables     String?  // JSON string of variables
+  response      String?  // JSON string of response (may be truncated)
+  success       Boolean
+  errorMessage  String?
+  durationMs    Int
+  createdAt     DateTime @default(now())
+
+  @@index([storeDomain])
+  @@index([storeDomain, createdAt])
+  @@index([toolName])
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// BACKGROUND JOBS
+// ============================================================================
+
+// Tracks long-running async operations (bulk export/import, file uploads)
+model BackgroundJob {
+  id               String   @id @default(uuid())
+  storeDomain      String
+  sessionId        String   // MCP session that started the job
+  bulkOperationId  String?  // Shopify bulk operation GID if applicable
+  type             String   // BULK_EXPORT, BULK_IMPORT, FILE_UPLOAD
+  name             String   // Human-readable job name
+  status           String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
+  progress         Float    @default(0) // Progress percentage (0-100)
+  total            Int      @default(0) // Total items to process
+  processed        Int      @default(0) // Items processed so far
+  data             String?  // JSON - additional job metadata
+  result           String?  // JSON - job results
+  error            String?  // Error message if failed
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([storeDomain])
+  @@index([storeDomain, status])
+  @@index([bulkOperationId])
+  @@index([status])
+  @@index([sessionId])
+}

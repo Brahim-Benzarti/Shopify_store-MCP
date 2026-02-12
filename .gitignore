@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Generated GraphQL types (regenerate with `npm run graphql-codegen`)
+src/types/admin/*.generated.ts
+src/types/admin/*.types.ts
+src/types/storefront/*.generated.ts
+src/types/storefront/*.types.ts
+
+# Bug reports directory (contains session-specific data)
+.bug-reports/
+
+# SQLite database (contains operation logs and local state)
+*.db
+*.db-journal
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/

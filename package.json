@@ -1,0 +1,83 @@
+{
+  "name": "shopify-store-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Shopify store operations via Admin and Storefront APIs",
+  "author": "Brahim Benzarti",
+  "license": "ISC",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "shopify-store-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "prisma/schema.prisma",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "shopify",
+    "admin-api",
+    "graphql",
+    "ai",
+    "claude",
+    "cursor"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ibrahimbenzarti/shopify-store-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ibrahimbenzarti/shopify-store-mcp/issues"
+  },
+  "homepage": "https://github.com/ibrahimbenzarti/shopify-store-mcp#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "prisma generate && tsc && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "inspect": "npm run build && npx @modelcontextprotocol/inspector dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "graphql-codegen": "graphql-codegen -p=adminApi && graphql-codegen -p=storefrontApi",
+    "graphql-codegen:admin": "graphql-codegen -p=adminApi",
+    "graphql-codegen:storefront": "graphql-codegen -p=storefrontApi",
+    "graphql-codegen:watch": "graphql-codegen --watch",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "@prisma/client": "^6.3.0",
+    "@shopify/admin-api-client": "^1.1.0",
+    "@shopify/storefront-api-client": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "p-queue": "^8.0.1",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.0",
+    "@shopify/api-codegen-preset": "^1.1.1",
+    "@types/node": "^22.0.0",
+    "graphql": "^16.9.0",
+    "graphql-config": "^5.1.0",
+    "prisma": "^6.3.0",
+    "typescript": "^5.6.0"
+  },
+  "resolutions": {
+    "@graphql-tools/url-loader": "8.0.16",
+    "@graphql-codegen/client-preset": "4.7.0",
+    "@graphql-codegen/typescript-operations": "4.5.0"
+  },
+  "overrides": {
+    "@graphql-tools/url-loader": "8.0.16",
+    "@graphql-codegen/client-preset": "4.7.0",
+    "@graphql-codegen/typescript-operations": "4.5.0"
+  }
+}
