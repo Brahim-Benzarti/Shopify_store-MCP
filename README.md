@@ -1,5 +1,11 @@
 # Shopify Store MCP Server
 
+[![npm version](https://img.shields.io/npm/v/shopify-store-mcp.svg)](https://www.npmjs.com/package/shopify-store-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/shopify-store-mcp.svg)](https://www.npmjs.com/package/shopify-store-mcp)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
+
 A Model Context Protocol (MCP) server that connects to **live Shopify stores** via the Admin and Storefront APIs. Unlike documentation-only MCPs, this server enables AI agents to perform real operations on your store.
 
 ## Features
