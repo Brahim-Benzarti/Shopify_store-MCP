@@ -7,7 +7,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "shopify-store-mcp": "./dist/index.js"
+    "shopify-store-mcp": "dist/index.js"
   },
   "files": [
     "dist/**/*.js",
