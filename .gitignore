@@ -35,6 +35,10 @@ Thumbs.db
 *.swp
 *.swo
 
+# Local dev configs (may contain secrets)
+.claude/
+.cursor/mcp.json
+
 # Logs
 *.log
 npm-debug.log*

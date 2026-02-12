@@ -1,0 +1,99 @@
+---
+description: Project overview and architecture for Shopify Store MCP Server
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Shopify Store MCP Server
+
+## Overview
+
+An MCP server that connects to **live Shopify stores** via Admin and Storefront APIs, enabling AI agents to perform real operations. Unlike documentation-only MCPs, this actually interacts with stores.
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Runtime | Node.js 18+ with TypeScript (ES2022, ESM) |
+| MCP SDK | `@modelcontextprotocol/sdk` v1.x |
+| Admin API | `@shopify/admin-api-client` |
+| Storefront API | `@shopify/storefront-api-client` |
+| Database | SQLite + Prisma |
+| Queue | p-queue (rate limiting) |
+| Validation | Zod |
+| Transport | STDIO |
+
+## Project Structure
+
+```
+src/
+├── index.ts              # Entry point + initialization
+├── config.ts             # Env loading + validation
+├── shopify-client.ts     # API client factories
+├── errors.ts             # Response formatters
+├── types.ts              # Shared types
+├── db.ts                 # Prisma client singleton
+├── queue.ts              # Rate-limited queue
+├── logger.ts             # Operation logging
+├── utils/
+│   └── polling.ts        # Async polling helper
+├── graphql/
+│   ├── admin/            # Admin API queries
+│   │   ├── common/       # Products, orders, customers, etc.
+│   │   ├── specialized/  # Inventory, metafields, bulk, files
+│   │   └── index.ts      # Barrel export
+│   └── storefront/       # Storefront API queries
+├── tools/                # MCP tools (10 total)
+│   ├── shop.ts           # get_shop_info
+│   ├── graphql.ts        # run_graphql_query (universal)
+│   ├── smart-*.ts        # Smart multi-step tools (5)
+│   └── infrastructure.ts # configure, get_history, get_stats
+├── prompts/              # MCP prompts (5)
+└── resources/            # MCP resources (4)
+prisma/
+└── schema.prisma         # Database schema
+```
+
+## Architecture Philosophy
+
+### Two-Tier Tool Design
+
+1. **Generic tools** — `run_graphql_query` is the universal escape hatch for ANY Shopify operation
+2. **Smart tools** — Multi-step workflows that orchestrate multiple API calls
+
+**Why?** Shopify has hundreds of GraphQL operations. Per-resource CRUD tools don't scale. Smart tools handle complexity agents would struggle with (polling, staged uploads, bulk ops).
+
+### Tool Categories
+
+| Category | Tools | Purpose |
+|----------|-------|---------|
+| Core | `get_shop_info`, `run_graphql_query` | Basic info + universal GraphQL |
+| Smart | `upload_file`, `bulk_export`, `bulk_import`, `upsert_metaobject`, `schema_discover` | Multi-step workflows |
+| Infrastructure | `configure`, `get_history`, `get_stats` | Config + debugging |
+
+## Rate Limiting
+
+Queue respects Shopify's plan-based limits:
+
+| Tier | Req/sec | Plans |
+|------|---------|-------|
+| STANDARD | 1 | Basic, Development |
+| ADVANCED | 2 | Advanced |
+| PLUS | 5 | Shopify Plus |
+| ENTERPRISE | 10 | Commerce Components |
+
+## Database
+
+SQLite at `~/.shopify-mcp/mcp.db` stores:
+- **StoreConfig** — Per-store tier configuration
+- **OperationLog** — Every GraphQL operation
+- **BackgroundJob** — Async job tracking
+
+## Key Commands
+
+```bash
+npm run build      # Compile TypeScript + generate Prisma
+npm run dev        # Watch mode
+npm run inspect    # MCP Inspector for testing
+npm run db:studio  # Browse database
+```

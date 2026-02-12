@@ -1,0 +1,251 @@
+---
+description: GraphQL patterns for Shopify Admin and Storefront APIs
+globs: ["src/graphql/**/*.ts", "src/tools/**/*.ts"]
+---
+
+# GraphQL Patterns for Shopify APIs
+
+## Query Structure
+
+Always use the `#graphql` tag for syntax highlighting:
+
+```typescript
+export const QUERY_NAME = `#graphql
+  query QueryName($var: Type!) {
+    # ...
+  }
+`;
+```
+
+## Pagination
+
+Shopify uses cursor-based pagination:
+
+```graphql
+query GetProducts($first: Int!, $after: String) {
+  products(first: $first, after: $after) {
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      node {
+        id
+        title
+      }
+    }
+  }
+}
+```
+
+## Common Admin API Patterns
+
+### Products
+```graphql
+query GetProduct($id: ID!) {
+  product(id: $id) {
+    id
+    title
+    handle
+    status
+    variants(first: 10) {
+      edges {
+        node {
+          id
+          title
+          price
+          inventoryQuantity
+        }
+      }
+    }
+  }
+}
+
+mutation ProductUpdate($input: ProductInput!) {
+  productUpdate(input: $input) {
+    product {
+      id
+      title
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+```
+
+### Orders
+```graphql
+query GetOrders($first: Int!, $query: String) {
+  orders(first: $first, query: $query) {
+    edges {
+      node {
+        id
+        name
+        totalPriceSet {
+          shopMoney {
+            amount
+            currencyCode
+          }
+        }
+        lineItems(first: 10) {
+          edges {
+            node {
+              title
+              quantity
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Metafields
+```graphql
+mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    metafields {
+      id
+      namespace
+      key
+      value
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+```
+
+### Metaobjects
+```graphql
+query MetaobjectByHandle($handle: MetaobjectHandleInput!) {
+  metaobjectByHandle(handle: $handle) {
+    id
+    handle
+    type
+    fields {
+      key
+      value
+    }
+  }
+}
+
+mutation MetaobjectUpsert($handle: MetaobjectHandleInput!, $metaobject: MetaobjectUpsertInput!) {
+  metaobjectUpsert(handle: $handle, metaobject: $metaobject) {
+    metaobject {
+      id
+      handle
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+```
+
+### Files
+```graphql
+mutation FileCreate($files: [FileCreateInput!]!) {
+  fileCreate(files: $files) {
+    files {
+      id
+      alt
+      ... on MediaImage {
+        image {
+          url
+        }
+      }
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+```
+
+### Bulk Operations
+```graphql
+mutation BulkOperationRunQuery($query: String!) {
+  bulkOperationRunQuery(query: $query) {
+    bulkOperation {
+      id
+      status
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+
+query CurrentBulkOperation {
+  currentBulkOperation {
+    id
+    status
+    errorCode
+    objectCount
+    url
+  }
+}
+```
+
+## GID Formats
+
+Shopify Global IDs follow this pattern:
+```
+gid://shopify/{ResourceType}/{numericId}
+```
+
+Examples:
+- `gid://shopify/Product/123456789`
+- `gid://shopify/Order/987654321`
+- `gid://shopify/Customer/111222333`
+- `gid://shopify/Collection/444555666`
+
+Use `normalizeGid()` from `errors.ts` to handle both formats.
+
+## Error Handling
+
+### GraphQL Errors (API level)
+```typescript
+if (response.errors) {
+  // Network errors, auth errors, syntax errors
+  return formatGraphQLErrors(response);
+}
+```
+
+### User Errors (Business logic)
+```typescript
+const userErrors = response.data?.mutation?.userErrors;
+if (userErrors?.length) {
+  // Validation errors, business rule violations
+  return formatUserErrors(userErrors);
+}
+```
+
+## Query Variables
+
+Always use variables, never string interpolation:
+
+```typescript
+// Good
+const response = await client.request(GET_PRODUCT, {
+  variables: { id: productId }
+});
+
+// Bad - SQL injection risk equivalent
+const query = `query { product(id: "${productId}") { ... } }`;
+```
+
+## API Version
+
+Current version: `2025-01`
+
+The version is set in `config.ts` and passed to the Shopify client. Update when Shopify releases new API versions.

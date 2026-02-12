@@ -1,0 +1,198 @@
+---
+description: How to add new MCP tools to the server
+globs: ["src/tools/**/*.ts"]
+---
+
+# Adding New Tools
+
+## Decision: Smart Tool vs GraphQL Query?
+
+**Use `run_graphql_query`** when:
+- Single API call
+- Standard CRUD operation
+- Agent can handle the response
+
+**Create a Smart Tool** when:
+- Multiple API calls needed
+- Polling/async operations
+- Complex orchestration
+- Response needs transformation
+
+## Creating a Smart Tool
+
+### 1. Create the tool file
+
+```typescript
+// src/tools/smart-example.ts
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { AdminApiClient } from "../shopify-client.js";
+import {
+  formatSuccessResponse,
+  formatErrorResponse,
+  formatGraphQLErrors,
+} from "../errors.js";
+import { enqueue } from "../queue.js";
+import { logOperation } from "../logger.js";
+
+export function registerSmartExampleTools(
+  server: McpServer,
+  client: AdminApiClient,
+  storeDomain: string
+): void {
+  server.registerTool(
+    "smart_example",
+    {
+      title: "Smart Example Tool",
+      description:
+        "Describe what this tool does, when to use it, and what it returns. " +
+        "Be specific about the workflow it handles.",
+      inputSchema: {
+        requiredParam: z.string().describe("What this parameter does"),
+        optionalParam: z.number().optional().describe("Optional parameter"),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ requiredParam, optionalParam }) => {
+      const startTime = Date.now();
+
+      try {
+        // Step 1: First API call
+        const step1 = await enqueue(() =>
+          client.request(QUERY_1, { variables: { requiredParam } })
+        );
+
+        if (step1.errors) {
+          return formatGraphQLErrors(step1);
+        }
+
+        // Step 2: Process and make second call
+        const step2 = await enqueue(() =>
+          client.request(QUERY_2, { variables: { id: step1.data.id } })
+        );
+
+        // Log the operation
+        await logOperation({
+          storeDomain,
+          toolName: "smart_example",
+          operationType: "mutation",
+          query: "smart_example workflow",
+          variables: { requiredParam, optionalParam },
+          response: step2.data,
+          success: true,
+          durationMs: Date.now() - startTime,
+        });
+
+        return formatSuccessResponse({
+          result: step2.data,
+          stepsCompleted: 2,
+        });
+      } catch (error) {
+        return formatErrorResponse(error);
+      }
+    }
+  );
+}
+```
+
+### 2. Add GraphQL queries
+
+```typescript
+// src/graphql/admin/specialized/example.ts
+export const QUERY_1 = `#graphql
+  query ExampleQuery($param: String!) {
+    # ...
+  }
+`;
+
+export const QUERY_2 = `#graphql
+  mutation ExampleMutation($id: ID!) {
+    # ...
+  }
+`;
+```
+
+### 3. Export from barrel
+
+```typescript
+// src/graphql/admin/index.ts
+export * from "./specialized/example.js";
+```
+
+### 4. Register in tools index
+
+```typescript
+// src/tools/index.ts
+import { registerSmartExampleTools } from "./smart-example.js";
+
+export function registerAllTools(...) {
+  // ...existing tools...
+  registerSmartExampleTools(server, client, storeDomain);
+}
+```
+
+## Tool Annotations Guide
+
+| Annotation | When to use |
+|------------|-------------|
+| `readOnlyHint: true` | Only reads data, no side effects |
+| `destructiveHint: true` | Deletes data or has permanent effects |
+| `idempotentHint: true` | Same input always produces same result |
+| `openWorldHint: true` | Interacts with external systems |
+
+## Testing Tools
+
+1. Build: `npm run build`
+2. Test with inspector: `npm run inspect`
+3. Or configure in your MCP client and test live
+
+## Common Patterns
+
+### Upsert Pattern
+```typescript
+// Check if exists
+const existing = await client.request(GET_BY_HANDLE, { handle });
+if (existing.data?.item) {
+  // Update
+  return client.request(UPDATE, { id: existing.data.item.id, input });
+} else {
+  // Create
+  return client.request(CREATE, { input });
+}
+```
+
+### Polling Pattern
+```typescript
+import { pollUntil } from "../utils/polling.js";
+
+const result = await pollUntil(
+  async () => {
+    const { data } = await client.request(CHECK_STATUS, { id });
+    const status = data?.operation?.status;
+    return {
+      done: status === "COMPLETED" || status === "FAILED",
+      result: status === "COMPLETED" ? data.operation : undefined,
+      error: status === "FAILED" ? data.operation.errorMessage : undefined,
+    };
+  },
+  { intervalMs: 2000, timeoutMs: 60000 }
+);
+```
+
+### Bulk Operation Pattern
+```typescript
+// 1. Start bulk operation
+const start = await client.request(BULK_START, { query });
+const bulkOpId = start.data?.bulkOperationRunQuery?.bulkOperation?.id;
+
+// 2. Poll until complete
+const completed = await pollUntil(...);
+
+// 3. Return download URL
+return formatSuccessResponse({ url: completed.url });
+```

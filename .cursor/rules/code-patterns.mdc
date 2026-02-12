@@ -1,0 +1,180 @@
+---
+description: Code patterns and conventions for this project
+globs: ["src/**/*.ts"]
+alwaysApply: true
+---
+
+# Code Patterns & Conventions
+
+## TypeScript
+
+- **ES Modules** — Use `.js` extension in imports (TypeScript compiles to ESM)
+- **Strict mode** — All types must be explicit, no `any`
+- **Const assertions** — Use `as const` for literal types
+
+```typescript
+// Good
+import { foo } from "./foo.js";
+
+// Bad
+import { foo } from "./foo";
+```
+
+## Console Output
+
+**CRITICAL:** Never use `console.log` — STDIO transport uses stdout for MCP protocol.
+
+```typescript
+// Good — stderr for logging
+console.error("[shopify-store-mcp] Starting...");
+
+// Bad — breaks MCP protocol
+console.log("Starting...");
+```
+
+## Error Handling
+
+Use utilities from `errors.ts`:
+
+```typescript
+import {
+  formatSuccessResponse,
+  formatErrorResponse,
+  formatGraphQLErrors,
+  formatUserErrors,
+  normalizeGid,
+} from "../errors.js";
+
+// In tool handler
+try {
+  const response = await client.request(query, { variables });
+
+  if (response.errors) {
+    return formatGraphQLErrors(response);
+  }
+
+  // Check for userErrors in mutations
+  const userErrors = response.data?.someOperation?.userErrors;
+  if (userErrors?.length) {
+    return formatUserErrors(userErrors);
+  }
+
+  return formatSuccessResponse(response.data);
+} catch (error) {
+  return formatErrorResponse(error);
+}
+```
+
+## GraphQL Queries
+
+All queries use `#graphql` tag for IDE support:
+
+```typescript
+export const GET_PRODUCTS = `#graphql
+  query GetProducts($first: Int!) {
+    products(first: $first) {
+      edges {
+        node {
+          id
+          title
+        }
+      }
+    }
+  }
+`;
+```
+
+Organize in:
+- `src/graphql/admin/common/` — Frequently used queries
+- `src/graphql/admin/specialized/` — Complex/specific queries
+- Export all from `src/graphql/admin/index.ts`
+
+## Tool Registration
+
+```typescript
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+
+server.registerTool(
+  "tool_name",
+  {
+    title: "Human-Readable Title",
+    description: "What this tool does, when to use it, what it returns.",
+    inputSchema: {
+      param: z.string().describe("Parameter description"),
+      optional: z.number().optional().describe("Optional param"),
+    },
+    annotations: {
+      readOnlyHint: true,      // Doesn't modify state
+      destructiveHint: false,  // No permanent side effects
+      idempotentHint: true,    // Safe to retry
+      openWorldHint: false,    // Limited domain
+    },
+  },
+  async ({ param, optional }) => {
+    // Implementation
+  }
+);
+```
+
+## GID Normalization
+
+Always use `normalizeGid` for IDs — accepts both numeric and full GID:
+
+```typescript
+const gid = normalizeGid(productId, "Product");
+// "123" → "gid://shopify/Product/123"
+// "gid://shopify/Product/123" → "gid://shopify/Product/123"
+```
+
+## Rate-Limited Operations
+
+All Shopify API calls should go through the queue:
+
+```typescript
+import { enqueue } from "../queue.js";
+
+const result = await enqueue(() => client.request(query));
+```
+
+## Logging Operations
+
+Use the logger for debugging:
+
+```typescript
+import { logOperation } from "../logger.js";
+
+const startTime = Date.now();
+const response = await client.request(query, { variables });
+await logOperation({
+  storeDomain,
+  toolName: "my_tool",
+  operationType: "query",
+  query,
+  variables,
+  response: response.data,
+  success: !response.errors,
+  errorMessage: response.errors?.[0]?.message,
+  durationMs: Date.now() - startTime,
+});
+```
+
+## Polling Pattern
+
+For async Shopify operations:
+
+```typescript
+import { pollUntil } from "../utils/polling.js";
+
+const result = await pollUntil(
+  async () => {
+    const status = await checkStatus();
+    return {
+      done: status === "COMPLETED",
+      result: status === "COMPLETED" ? data : undefined,
+      error: status === "FAILED" ? "Operation failed" : undefined,
+    };
+  },
+  { intervalMs: 2000, timeoutMs: 30000 }
+);
+```

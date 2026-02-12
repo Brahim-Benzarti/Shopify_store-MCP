@@ -19,15 +19,17 @@ export interface ShopifyConfig {
 }
 
 export function loadConfig(): ShopifyConfig {
-  // Try to load .env from the package root (one level up from dist/)
+  // Try to load .env files from the package root (one level up from dist/)
+  // Priority: .env.local > .env (local overrides shared)
   const packageRoot = join(__dirname, "..");
+  loadDotenv({ path: join(packageRoot, ".env.local") });
   loadDotenv({ path: join(packageRoot, ".env") });
 
   const storeDomain = process.env.SHOPIFY_STORE_URL;
   const adminAccessToken = process.env.SHOPIFY_ACCESS_TOKEN;
   const storefrontAccessToken = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
   const customerAccessToken = process.env.SHOPIFY_CUSTOMER_ACCESS_TOKEN;
-  const apiVersion = process.env.SHOPIFY_API_VERSION || "2026-01";
+  const apiVersion = process.env.SHOPIFY_API_VERSION || "2025-01";
   const bugReportEnabled = process.env.SHOPIFY_MCP_BUG_REPORTS === "true";
   const bugReportBaseDir = process.env.SHOPIFY_MCP_BUG_REPORT_DIR;
 
