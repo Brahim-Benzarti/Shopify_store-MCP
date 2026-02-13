@@ -22,6 +22,7 @@ import {
   getOperationHistory,
   getOperationStats,
   getSessionId,
+  logOperation,
 } from "../logger.js";
 import { GET_SHOP } from "../graphql/admin/index.js";
 import { enqueue } from "../queue.js";
@@ -67,6 +68,8 @@ export function registerInfrastructureTools(
       },
     },
     async ({ tier, autoDetect }) => {
+      const startTime = Date.now();
+
       try {
         let detectedTier: ShopifyTier | undefined;
         let shopPlan: string | undefined;
@@ -77,6 +80,16 @@ export function registerInfrastructureTools(
           const response = await enqueue(() => client.request(GET_SHOP, {}));
 
           if (response.errors) {
+            await logOperation({
+              storeDomain,
+              toolName: "configure",
+              query: GET_SHOP,
+              variables: { autoDetect },
+              response,
+              success: false,
+              errorMessage: "GraphQL errors during auto-detect",
+              durationMs: Date.now() - startTime,
+            });
             return formatGraphQLErrors(response);
           }
 
@@ -130,7 +143,7 @@ export function registerInfrastructureTools(
           where: { storeDomain },
         });
 
-        return formatSuccessResponse({
+        const result = {
           success: true,
           config: {
             storeDomain,
@@ -142,8 +155,29 @@ export function registerInfrastructureTools(
             sessionId: getSessionId(),
           },
           availableTiers: Object.keys(SHOPIFY_TIER_CONFIGS),
+        };
+
+        await logOperation({
+          storeDomain,
+          toolName: "configure",
+          query: "configure",
+          variables: { tier, autoDetect },
+          response: result,
+          success: true,
+          durationMs: Date.now() - startTime,
         });
+
+        return formatSuccessResponse(result);
       } catch (error) {
+        await logOperation({
+          storeDomain,
+          toolName: "configure",
+          query: "configure",
+          variables: { tier, autoDetect },
+          success: false,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          durationMs: Date.now() - startTime,
+        });
         return formatErrorResponse(error);
       }
     }

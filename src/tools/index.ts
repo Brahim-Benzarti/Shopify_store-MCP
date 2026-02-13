@@ -17,8 +17,8 @@ export function registerAllTools(
   storeDomain: string
 ): void {
   // Core tools (2)
-  registerShopTools(server, client);      // get_shop_info
-  registerGraphQLTools(server, client);   // run_graphql_query - the universal escape hatch
+  registerShopTools(server, client, storeDomain);      // get_shop_info
+  registerGraphQLTools(server, client, storeDomain);   // run_graphql_query - the universal escape hatch
 
   // Smart tools (5) - multi-step workflows that agents would struggle with
   registerSmartFileTools(server, client, storeDomain);      // upload_file

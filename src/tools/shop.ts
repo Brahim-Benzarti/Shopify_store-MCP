@@ -6,10 +6,13 @@ import {
   formatErrorResponse,
 } from "../errors.js";
 import { GET_SHOP } from "../graphql/admin/index.js";
+import { enqueue } from "../queue.js";
+import { logOperation } from "../logger.js";
 
 export function registerShopTools(
   server: McpServer,
-  client: AdminApiClient
+  client: AdminApiClient,
+  storeDomain: string
 ): void {
   server.registerTool(
     "get_shop_info",
@@ -27,15 +30,42 @@ export function registerShopTools(
       },
     },
     async () => {
+      const startTime = Date.now();
+
       try {
-        const response = await client.request(GET_SHOP);
+        const response = await enqueue(() => client.request(GET_SHOP));
 
         if (response.errors) {
+          await logOperation({
+            storeDomain,
+            toolName: "get_shop_info",
+            query: GET_SHOP,
+            success: false,
+            errorMessage: "GraphQL errors",
+            durationMs: Date.now() - startTime,
+          });
           return formatGraphQLErrors(response);
         }
 
+        await logOperation({
+          storeDomain,
+          toolName: "get_shop_info",
+          query: GET_SHOP,
+          response: response.data,
+          success: true,
+          durationMs: Date.now() - startTime,
+        });
+
         return formatSuccessResponse(response.data);
       } catch (error) {
+        await logOperation({
+          storeDomain,
+          toolName: "get_shop_info",
+          query: GET_SHOP,
+          success: false,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          durationMs: Date.now() - startTime,
+        });
         return formatErrorResponse(error);
       }
     }

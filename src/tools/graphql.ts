@@ -6,10 +6,13 @@ import {
   formatGraphQLErrors,
   formatErrorResponse,
 } from "../errors.js";
+import { enqueue } from "../queue.js";
+import { logOperation } from "../logger.js";
 
 export function registerGraphQLTools(
   server: McpServer,
-  client: AdminApiClient
+  client: AdminApiClient,
+  storeDomain: string
 ): void {
   server.registerTool(
     "run_graphql_query",
@@ -42,17 +45,50 @@ export function registerGraphQLTools(
       },
     },
     async ({ query, variables }) => {
+      const startTime = Date.now();
+
       try {
-        const response = await client.request(query, {
-          variables: variables as Record<string, unknown>,
-        });
+        const response = await enqueue(() =>
+          client.request(query, {
+            variables: variables as Record<string, unknown>,
+          })
+        );
 
         if (response.errors) {
+          await logOperation({
+            storeDomain,
+            toolName: "run_graphql_query",
+            query,
+            variables,
+            response,
+            success: false,
+            errorMessage: "GraphQL errors",
+            durationMs: Date.now() - startTime,
+          });
           return formatGraphQLErrors(response);
         }
 
+        await logOperation({
+          storeDomain,
+          toolName: "run_graphql_query",
+          query,
+          variables,
+          response: response.data,
+          success: true,
+          durationMs: Date.now() - startTime,
+        });
+
         return formatSuccessResponse(response.data);
       } catch (error) {
+        await logOperation({
+          storeDomain,
+          toolName: "run_graphql_query",
+          query,
+          variables,
+          success: false,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          durationMs: Date.now() - startTime,
+        });
         return formatErrorResponse(error);
       }
     }
