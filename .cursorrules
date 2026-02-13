@@ -1,0 +1,21 @@
+# Cursor Rules for Shopify Store MCP
+
+## Git Commits
+
+**NEVER add Co-Authored-By lines to commits.** Do not attribute commits to Claude, Cursor, or any AI assistant.
+
+## Code Patterns
+
+- Use `.js` extension in all TypeScript imports
+- Use `console.error` instead of `console.log` (STDIO transport)
+- Use `enqueue()` for all Shopify API calls (rate limiting)
+- Use `normalizeGid()` for Shopify IDs
+- Use error utilities from `src/errors.ts`
+
+## Project Architecture
+
+- `run_graphql_query` is the universal tool for any Shopify GraphQL
+- Smart tools handle multi-step workflows (polling, staged uploads)
+- Don't create per-resource CRUD tools
+
+See CLAUDE.md for full documentation.

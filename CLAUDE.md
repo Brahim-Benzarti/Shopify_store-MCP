@@ -38,6 +38,10 @@ npm run db:studio  # Browse SQLite database
 
 ## Critical Patterns
 
+### Git Commits
+
+**NEVER add Co-Authored-By lines to commits.** Do not attribute commits to Claude or any AI assistant.
+
 ### Never use console.log
 
 STDIO transport uses stdout for MCP protocol. Always use `console.error`:
