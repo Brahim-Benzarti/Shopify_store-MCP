@@ -1,6 +1,6 @@
 {
   "name": "shopify-store-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MCP server for Shopify store operations via Admin and Storefront APIs",
   "author": "Brahim Benzarti",
   "license": "ISC",
@@ -38,6 +38,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
+    "postinstall": "prisma generate",
     "build": "prisma generate && tsc && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
@@ -59,6 +60,7 @@
     "@shopify/storefront-api-client": "^1.0.0",
     "dotenv": "^16.4.5",
     "p-queue": "^8.0.1",
+    "prisma": "^6.3.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
@@ -67,7 +69,6 @@
     "@types/node": "^22.0.0",
     "graphql": "^16.9.0",
     "graphql-config": "^5.1.0",
-    "prisma": "^6.3.0",
     "typescript": "^5.6.0"
   },
   "resolutions": {
