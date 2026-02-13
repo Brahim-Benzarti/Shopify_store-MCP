@@ -1,6 +1,6 @@
 {
   "name": "shopify-store-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for Shopify store operations via Admin and Storefront APIs",
   "author": "Brahim Benzarti",
   "license": "ISC",
@@ -28,12 +28,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ibrahimbenzarti/shopify-store-mcp.git"
+    "url": "git+https://github.com/Brahim-Benzarti/Shopify_store-MCP.git"
   },
   "bugs": {
-    "url": "https://github.com/ibrahimbenzarti/shopify-store-mcp/issues"
+    "url": "https://github.com/Brahim-Benzarti/Shopify_store-MCP/issues"
   },
-  "homepage": "https://github.com/ibrahimbenzarti/shopify-store-mcp#readme",
+  "homepage": "https://github.com/Brahim-Benzarti/Shopify_store-MCP#readme",
   "engines": {
     "node": ">=18.0.0"
   },
