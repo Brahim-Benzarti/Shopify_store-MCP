@@ -1,6 +1,6 @@
 {
   "name": "shopify-store-mcp",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "MCP server for Shopify store operations via Admin and Storefront APIs",
   "author": "Brahim Benzarti",
   "license": "ISC",

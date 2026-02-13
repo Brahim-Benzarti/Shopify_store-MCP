@@ -14,6 +14,6 @@ export interface MoneyV2 {
 }
 
 export interface UserError {
-  field: string[];
+  field: string[] | null;
   message: string;
 }

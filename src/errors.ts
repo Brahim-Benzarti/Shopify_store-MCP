@@ -79,7 +79,7 @@ export function formatUserErrors(userErrors: UserError[]): {
   isError: true;
 } {
   const lines = userErrors.map(
-    (e) => `- ${e.field.join(".")}: ${e.message}`
+    (e) => `- ${e.field?.join(".") || "general"}: ${e.message}`
   );
   return {
     content: [
