@@ -49,8 +49,8 @@ export const BULK_OPERATION_RUN_MUTATION = `#graphql
 `;
 
 /**
- * Get current bulk operation status
- * Only one bulk operation can run at a time per app
+ * Get current bulk operation status (for queries)
+ * Deprecated in 2026-01, use GET_BULK_OPERATION_BY_ID instead
  */
 export const GET_CURRENT_BULK_OPERATION = `#graphql
   query GetCurrentBulkOperation {
@@ -72,7 +72,49 @@ export const GET_CURRENT_BULK_OPERATION = `#graphql
 `;
 
 /**
- * Get a specific bulk operation by ID
+ * Get current bulk MUTATION operation status
+ * Required for polling mutation status in versions < 2026-01
+ */
+export const GET_CURRENT_BULK_MUTATION = `#graphql
+  query GetCurrentBulkMutation {
+    currentBulkOperation(type: MUTATION) {
+      id
+      type
+      status
+      url
+      objectCount
+      fileSize
+      partialDataUrl
+      errorCode
+      createdAt
+      completedAt
+    }
+  }
+`;
+
+/**
+ * Get a specific bulk operation by ID (API version 2026-01+)
+ * Use this for polling both queries and mutations
+ */
+export const GET_BULK_OPERATION_BY_ID = `#graphql
+  query GetBulkOperationById($id: ID!) {
+    bulkOperation(id: $id) {
+      id
+      type
+      status
+      url
+      objectCount
+      fileSize
+      partialDataUrl
+      errorCode
+      createdAt
+      completedAt
+    }
+  }
+`;
+
+/**
+ * Get a specific bulk operation by ID (legacy node query)
  */
 export const GET_BULK_OPERATION = `#graphql
   query GetBulkOperation($id: ID!) {

@@ -15,6 +15,7 @@ import {
 import {
   BULK_OPERATION_RUN_QUERY,
   GET_CURRENT_BULK_OPERATION,
+  GET_BULK_OPERATION_BY_ID,
   STAGED_UPLOADS_CREATE,
   BULK_OPERATION_RUN_MUTATION,
 } from "../graphql/admin/index.js";
@@ -330,11 +331,13 @@ export function registerSmartBulkTools(
           return formatErrorResponse("No bulk operation returned");
         }
 
-        // Step 4: Poll until complete
+        // Step 4: Poll until complete using operation ID (API 2026-01+)
         const result = await pollUntil(
           async () => {
             const statusResponse = await enqueue(() =>
-              client.request(GET_CURRENT_BULK_OPERATION, {})
+              client.request(GET_BULK_OPERATION_BY_ID, {
+                variables: { id: bulkOp.id },
+              })
             );
 
             if (statusResponse.errors) {
@@ -342,16 +345,17 @@ export function registerSmartBulkTools(
             }
 
             const current = (statusResponse.data as {
-              currentBulkOperation: {
+              bulkOperation: {
                 id: string;
                 status: string;
                 objectCount: number;
+                url: string | null;
                 errorCode: string | null;
               } | null;
-            }).currentBulkOperation;
+            }).bulkOperation;
 
-            if (!current || current.id !== bulkOp.id) {
-              return { done: true, error: "Bulk operation not found or changed" };
+            if (!current) {
+              return { done: true, error: "Bulk operation not found" };
             }
 
             if (current.status === BULK_STATUS.COMPLETED) {
@@ -361,6 +365,7 @@ export function registerSmartBulkTools(
                   id: current.id,
                   status: "COMPLETED",
                   objectCount: current.objectCount,
+                  url: current.url,
                 },
               };
             }
