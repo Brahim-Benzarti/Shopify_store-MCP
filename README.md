@@ -42,7 +42,7 @@ A Model Context Protocol (MCP) server that connects to **live Shopify stores** v
 
 ### Quick Install
 
-[![Install in Cursor](https://img.shields.io/badge/Install%20in-Cursor-blue?style=for-the-badge&logo=cursor)](https://cursor.com/install-mcp?name=shopify-store-mcp&config=eyJtY3BTZXJ2ZXJzIjp7InNob3BpZnktc3RvcmUtbWNwIjp7ImNvbW1hbmQiOiJucHgiLCJhcmdzIjpbIi15Iiwic2hvcGlmeS1zdG9yZS1tY3AiXSwiZW52Ijp7IlNIT1BJRllfU1RPUkVfVVJMIjoieW91ci1zdG9yZS5teXNob3BpZnkuY29tIiwiU0hPUElGWV9BQ0NFU1NfVE9LRU4iOiJzaHBhdF94eHh4eHh4eHh4eHh4eHh4eHh4eHgifX19fQ==)
+[![Install in Cursor](https://img.shields.io/badge/Install%20in-Cursor-blue?style=for-the-badge&logo=cursor)](https://cursor.com/en/install-mcp?name=shopify-store-mcp&config=eyJtY3BTZXJ2ZXJzIjp7InNob3BpZnktc3RvcmUtbWNwIjp7ImNvbW1hbmQiOiJucHgiLCJhcmdzIjpbIi15Iiwic2hvcGlmeS1zdG9yZS1tY3AiXSwiZW52Ijp7IlNIT1BJRllfU1RPUkVfVVJMIjoieW91ci1zdG9yZS5teXNob3BpZnkuY29tIiwiU0hPUElGWV9BQ0NFU1NfVE9LRU4iOiJzaHBhdF94eHh4eHh4eHh4eHh4eHh4eHh4eHgifX19fQ==)
 
 After installing, edit the configuration to add your actual store credentials.
 
