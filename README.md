@@ -273,6 +273,7 @@ Multi-step workflows that handle complexity automatically:
 | `bulk_export` | Start bulk query → poll completion → return JSONL download URL |
 | `bulk_import` | Staged upload → bulk mutation → poll completion |
 | `upsert_metaobject` | Create or update metaobject by handle (idempotent) |
+| `delete_metaobject` | Delete metaobject by ID or type+handle |
 | `schema_discover` | Discover metafield definitions and metaobject types |
 
 ### Infrastructure Tools

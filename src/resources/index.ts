@@ -313,6 +313,25 @@ Create or update a metaobject by handle (idempotent).
 }
 \`\`\`
 
+## delete_metaobject
+
+Delete a metaobject by ID or by type+handle.
+
+\`\`\`json
+{
+  "id": "gid://shopify/Metaobject/123456789"
+}
+\`\`\`
+
+Or by type and handle:
+
+\`\`\`json
+{
+  "type": "color_swatch",
+  "handle": "navy-blue"
+}
+\`\`\`
+
 ## schema_discover
 
 Discover custom schema definitions in the store.

@@ -369,8 +369,10 @@ export function registerSmartFileTools(
         return formatSuccessResponse({
           success: true,
           mode: url ? "external_url" : filePath ? "local_file" : "staged_upload",
+          fileId: readyFile.id,
+          cdnUrl: readyFile.url,
           file: readyFile,
-          message: `File uploaded successfully. CDN URL: ${readyFile.url}`,
+          message: `File uploaded successfully. ID: ${readyFile.id} | CDN URL: ${readyFile.url}`,
         });
       } catch (error) {
         await logOperation({

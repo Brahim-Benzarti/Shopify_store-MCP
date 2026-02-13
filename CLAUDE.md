@@ -20,7 +20,7 @@ npm run db:studio  # Browse SQLite database
 
 **Don't create per-resource CRUD tools.** Shopify has hundreds of operations. Use `run_graphql_query` for simple operations, smart tools for complex workflows.
 
-### Current Tools (10)
+### Current Tools (11)
 
 | Tool | Type | Purpose |
 |------|------|---------|
@@ -30,6 +30,7 @@ npm run db:studio  # Browse SQLite database
 | `bulk_export` | Smart | Bulk query → JSONL URL |
 | `bulk_import` | Smart | Staged upload → bulk mutation |
 | `upsert_metaobject` | Smart | Idempotent create/update |
+| `delete_metaobject` | Smart | Delete by ID or type+handle |
 | `schema_discover` | Smart | Metafield/metaobject definitions |
 | `configure` | Infra | Set rate limit tier |
 | `get_history` | Infra | Query past operations |

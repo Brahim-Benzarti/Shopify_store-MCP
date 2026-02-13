@@ -278,6 +278,12 @@ export function registerSmartBulkTools(
           return formatErrorResponse("No staged upload target returned");
         }
 
+        // Extract the 'key' parameter which is the staged upload path
+        const keyParam = target.parameters.find(p => p.name === "key");
+        if (!keyParam) {
+          return formatErrorResponse("No 'key' parameter in staged upload response");
+        }
+
         // Step 2: Upload JSONL to staged URL
         const formData = new FormData();
         for (const param of target.parameters) {
@@ -294,12 +300,12 @@ export function registerSmartBulkTools(
           return formatErrorResponse(`Failed to upload JSONL: ${uploadResponse.statusText}`);
         }
 
-        // Step 3: Run bulk mutation
+        // Step 3: Run bulk mutation using the key path (not the full resourceUrl)
         const bulkResponse = await enqueue(() =>
           client.request(BULK_OPERATION_RUN_MUTATION, {
             variables: {
               mutation,
-              stagedUploadPath: target.resourceUrl,
+              stagedUploadPath: keyParam.value,
             },
           })
         );
