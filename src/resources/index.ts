@@ -213,4 +213,112 @@ If a tool returns a 403 error, it likely means your custom app is missing the re
       ],
     })
   );
+
+  // Smart Tools Reference
+  server.registerResource(
+    "smart-tools",
+    "shopify://docs/smart-tools",
+    {
+      title: "Smart Tools Reference",
+      description:
+        "Reference guide for smart multi-step tools that handle complex workflows automatically.",
+      mimeType: "text/markdown",
+    },
+    async () => ({
+      contents: [
+        {
+          uri: "shopify://docs/smart-tools",
+          mimeType: "text/markdown",
+          text: `# Smart Tools Reference
+
+Smart tools handle complex multi-step workflows automatically, including polling and staged uploads.
+
+## upload_file
+
+Upload files to Shopify with automatic status polling. Returns the final CDN URL when ready.
+
+### Mode 1: External URL
+Shopify fetches the file from a publicly accessible URL.
+
+\`\`\`json
+{
+  "url": "https://example.com/image.jpg",
+  "alt": "Product image",
+  "contentType": "IMAGE"
+}
+\`\`\`
+
+### Mode 2: Direct Content (Staged Upload)
+Upload file content directly using base64 encoding. Useful when you have file data but no public URL.
+
+\`\`\`json
+{
+  "content": "iVBORw0KGgoAAAANSUhEUgAA...",
+  "filename": "product-photo.jpg",
+  "mimeType": "image/jpeg",
+  "alt": "Product photo"
+}
+\`\`\`
+
+**Required for Mode 2:** \`content\`, \`filename\`, \`mimeType\`
+
+### Content Types
+- \`IMAGE\` - jpg, png, gif, webp, svg
+- \`VIDEO\` - mp4, mov, webm
+- \`FILE\` - pdf, documents, other files
+
+## bulk_export
+
+Export large datasets to JSONL format.
+
+\`\`\`json
+{
+  "query": "{ products { edges { node { id title } } } }"
+}
+\`\`\`
+
+Returns a download URL for the JSONL file when complete.
+
+## bulk_import
+
+Import data via bulk mutations.
+
+\`\`\`json
+{
+  "mutation": "mutation($input: ProductInput!) { productUpdate(input: $input) { product { id } } }",
+  "jsonlUrl": "https://example.com/data.jsonl"
+}
+\`\`\`
+
+## upsert_metaobject
+
+Create or update a metaobject by handle (idempotent).
+
+\`\`\`json
+{
+  "type": "color_swatch",
+  "handle": "navy-blue",
+  "fields": [
+    { "key": "name", "value": "Navy Blue" },
+    { "key": "hex", "value": "#000080" }
+  ]
+}
+\`\`\`
+
+## schema_discover
+
+Discover custom schema definitions in the store.
+
+\`\`\`json
+{
+  "includeMetafields": true,
+  "includeMetaobjects": true,
+  "metafieldOwnerTypes": ["PRODUCT", "VARIANT"]
+}
+\`\`\`
+`,
+        },
+      ],
+    })
+  );
 }
