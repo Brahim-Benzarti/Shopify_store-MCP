@@ -250,7 +250,7 @@ This helps your AI agent know **what queries to write** before executing them wi
 | `SHOPIFY_STORE_URL` | Yes | — | Store's myshopify.com domain |
 | `SHOPIFY_ACCESS_TOKEN` | Yes | — | Admin API access token |
 | `SHOPIFY_STOREFRONT_ACCESS_TOKEN` | No | — | Storefront API token |
-| `SHOPIFY_API_VERSION` | No | `2025-01` | API version |
+| `SHOPIFY_API_VERSION` | No | `2026-01` | API version (or `unstable` for bleeding edge) |
 | `SHOPIFY_TIER` | No | `STANDARD` | Rate limit tier |
 | `MCP_LOG_OPERATIONS` | No | `true` | Enable operation logging |
 
