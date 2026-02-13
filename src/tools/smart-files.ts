@@ -1,10 +1,13 @@
 /**
  * Smart file upload tool
  * Handles the full workflow: create file → poll status → return ready URL
- * Supports both external URLs and direct file content (via staged uploads)
+ * Supports external URLs, direct file content, and local file paths (via staged uploads)
  */
 
 import { z } from "zod";
+import * as fs from "fs";
+import * as path from "path";
+import { lookup as getMimeType } from "mime-types";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AdminApiClient } from "../shopify-client.js";
 import {
@@ -45,10 +48,11 @@ export function registerSmartFileTools(
     {
       title: "Upload File",
       description:
-        "Upload a file to Shopify. Supports TWO modes:\n\n" +
+        "Upload a file to Shopify. Supports THREE modes:\n\n" +
         "1. **External URL mode**: Provide `url` - Shopify fetches the file from the URL.\n" +
-        "2. **Direct content mode**: Provide `content` (base64) + `filename` + `mimeType` - " +
-        "Uses staged upload to upload file content directly.\n\n" +
+        "2. **Local file mode**: Provide `filePath` - Reads file from disk (best for large files).\n" +
+        "3. **Direct content mode**: Provide `content` (base64) + `filename` + `mimeType` - " +
+        "For small files only (< 5MB).\n\n" +
         "This is a SMART tool that handles the full workflow: " +
         "creates the file, polls until ready, and returns the final CDN URL.",
       inputSchema: {
@@ -57,29 +61,34 @@ export function registerSmartFileTools(
           .url()
           .optional()
           .describe(
-            "External URL for Shopify to fetch. Use this for publicly accessible files. " +
-            "Either provide `url` OR (`content` + `filename` + `mimeType`)."
+            "External URL for Shopify to fetch. Use for publicly accessible files."
+          ),
+        filePath: z
+          .string()
+          .optional()
+          .describe(
+            "Absolute path to a local file. RECOMMENDED for large files. " +
+            "MIME type and filename are auto-detected."
           ),
         content: z
           .string()
           .optional()
           .describe(
-            "Base64-encoded file content. Use this for direct file uploads. " +
-            "Requires `filename` and `mimeType` to be provided."
+            "Base64-encoded file content. Only for small files (< 5MB). " +
+            "Requires `filename` and `mimeType`."
           ),
         filename: z
           .string()
           .optional()
           .describe(
-            "Filename with extension (e.g., 'image.jpg', 'document.pdf'). " +
-            "Required for content mode, optional for URL mode."
+            "Filename with extension. Required for content mode, optional otherwise."
           ),
         mimeType: z
           .string()
           .optional()
           .describe(
-            "MIME type (e.g., 'image/jpeg', 'image/png', 'application/pdf'). " +
-            "Required for content mode."
+            "MIME type (e.g., 'image/jpeg', 'application/pdf'). " +
+            "Required for content mode, auto-detected for filePath mode."
           ),
         alt: z
           .string()
@@ -100,13 +109,13 @@ export function registerSmartFileTools(
         openWorldHint: true,
       },
     },
-    async ({ url, content, filename, mimeType, alt, contentType }) => {
+    async ({ url, filePath, content, filename, mimeType, alt, contentType }) => {
       const startTime = Date.now();
 
-      // Validate input - must have either URL or content
-      if (!url && !content) {
+      // Validate input - must have one of: URL, filePath, or content
+      if (!url && !filePath && !content) {
         return formatErrorResponse(
-          "Either 'url' (external URL) or 'content' (base64 data) must be provided."
+          "One of 'url', 'filePath', or 'content' must be provided."
         );
       }
 
@@ -114,6 +123,31 @@ export function registerSmartFileTools(
         return formatErrorResponse(
           "When providing 'content', both 'filename' and 'mimeType' are required."
         );
+      }
+
+      // Mode 2: Local file path - read file and convert to staged upload
+      let resolvedContent = content;
+      let resolvedFilename = filename;
+      let resolvedMimeType = mimeType;
+
+      if (filePath && !url && !content) {
+        // Validate file exists
+        if (!fs.existsSync(filePath)) {
+          return formatErrorResponse(`File not found: ${filePath}`);
+        }
+
+        const stats = fs.statSync(filePath);
+        if (!stats.isFile()) {
+          return formatErrorResponse(`Path is not a file: ${filePath}`);
+        }
+
+        // Read file and convert to base64
+        const fileBuffer = fs.readFileSync(filePath);
+        resolvedContent = fileBuffer.toString("base64");
+        resolvedFilename = filename || path.basename(filePath);
+        resolvedMimeType = mimeType || getMimeType(filePath) || "application/octet-stream";
+
+        console.error(`[upload_file] Reading local file: ${filePath} (${stats.size} bytes, ${resolvedMimeType})`);
       }
 
       try {
@@ -133,21 +167,21 @@ export function registerSmartFileTools(
             contentType: contentType || undefined,
           };
         }
-        // Mode 2: Staged upload with direct content
-        else if (content && filename && mimeType) {
+        // Mode 2/3: Staged upload with content (from base64 or local file)
+        else if (resolvedContent && resolvedFilename && resolvedMimeType) {
           // Step 1: Create staged upload target
-          const resource = detectResourceType(mimeType, contentType);
+          const resource = detectResourceType(resolvedMimeType, contentType);
 
           const stagedResponse = await enqueue(() =>
             client.request(STAGED_UPLOADS_CREATE, {
               variables: {
                 input: [
                   {
-                    filename,
-                    mimeType,
+                    filename: resolvedFilename,
+                    mimeType: resolvedMimeType,
                     httpMethod: "POST",
                     resource,
-                    fileSize: Buffer.from(content, "base64").length.toString(),
+                    fileSize: Buffer.from(resolvedContent, "base64").length.toString(),
                   },
                 ],
               },
@@ -159,7 +193,7 @@ export function registerSmartFileTools(
               storeDomain,
               toolName: "upload_file",
               query: STAGED_UPLOADS_CREATE,
-              variables: { filename, mimeType, resource },
+              variables: { filename: resolvedFilename, mimeType: resolvedMimeType, resource },
               response: stagedResponse,
               success: false,
               errorMessage: "GraphQL errors creating staged upload",
@@ -189,13 +223,13 @@ export function registerSmartFileTools(
           }
 
           // Step 2: Upload content to staged URL
-          const fileBuffer = Buffer.from(content, "base64");
+          const fileBuffer = Buffer.from(resolvedContent, "base64");
           const formData = new FormData();
 
           for (const param of target.parameters) {
             formData.append(param.name, param.value);
           }
-          formData.append("file", new Blob([fileBuffer], { type: mimeType }), filename);
+          formData.append("file", new Blob([fileBuffer], { type: resolvedMimeType }), resolvedFilename);
 
           const uploadResponse = await fetch(target.url, {
             method: "POST",
@@ -212,9 +246,9 @@ export function registerSmartFileTools(
           // Use the staged upload resourceUrl as the source
           fileInput = {
             originalSource: target.resourceUrl,
-            filename,
+            filename: resolvedFilename,
             alt: alt || undefined,
-            contentType: contentType || detectContentType(mimeType),
+            contentType: contentType || detectContentType(resolvedMimeType),
           };
         } else {
           return formatErrorResponse("Invalid input combination");
@@ -234,7 +268,7 @@ export function registerSmartFileTools(
             storeDomain,
             toolName: "upload_file",
             query: FILE_CREATE,
-            variables: { url, filename, alt, contentType, hasContent: !!content },
+            variables: { url, filePath, filename, alt, contentType, hasContent: !!(content || filePath) },
             response: createResponse,
             success: false,
             errorMessage: "GraphQL errors",
@@ -255,7 +289,7 @@ export function registerSmartFileTools(
             storeDomain,
             toolName: "upload_file",
             query: FILE_CREATE,
-            variables: { url, filename, alt, contentType, hasContent: !!content },
+            variables: { url, filePath, filename, alt, contentType, hasContent: !!(content || filePath) },
             response: createResponse,
             success: false,
             errorMessage: createData.fileCreate.userErrors.map(e => e.message).join(", "),
@@ -326,7 +360,7 @@ export function registerSmartFileTools(
           storeDomain,
           toolName: "upload_file",
           query: FILE_CREATE,
-          variables: { url, filename, alt, contentType, hasContent: !!content },
+          variables: { url, filePath, filename, alt, contentType, hasContent: !!(content || filePath) },
           response: readyFile,
           success: true,
           durationMs: Date.now() - startTime,
@@ -334,7 +368,7 @@ export function registerSmartFileTools(
 
         return formatSuccessResponse({
           success: true,
-          mode: url ? "external_url" : "staged_upload",
+          mode: url ? "external_url" : filePath ? "local_file" : "staged_upload",
           file: readyFile,
           message: `File uploaded successfully. CDN URL: ${readyFile.url}`,
         });
@@ -343,7 +377,7 @@ export function registerSmartFileTools(
           storeDomain,
           toolName: "upload_file",
           query: FILE_CREATE,
-          variables: { url, filename, alt, contentType, hasContent: !!content },
+          variables: { url, filePath, filename, alt, contentType, hasContent: !!(content || filePath) },
           success: false,
           errorMessage: error instanceof Error ? error.message : String(error),
           durationMs: Date.now() - startTime,

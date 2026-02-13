@@ -243,24 +243,32 @@ Shopify fetches the file from a publicly accessible URL.
 \`\`\`json
 {
   "url": "https://example.com/image.jpg",
-  "alt": "Product image",
-  "contentType": "IMAGE"
+  "alt": "Product image"
 }
 \`\`\`
 
-### Mode 2: Direct Content (Staged Upload)
-Upload file content directly using base64 encoding. Useful when you have file data but no public URL.
+### Mode 2: Local File Path (Recommended for large files)
+Read file directly from disk. MIME type is auto-detected.
+
+\`\`\`json
+{
+  "filePath": "/path/to/document.pdf",
+  "alt": "Product manual"
+}
+\`\`\`
+
+### Mode 3: Base64 Content (Small files only, < 5MB)
+For small files when you already have the content encoded.
 
 \`\`\`json
 {
   "content": "iVBORw0KGgoAAAANSUhEUgAA...",
-  "filename": "product-photo.jpg",
-  "mimeType": "image/jpeg",
-  "alt": "Product photo"
+  "filename": "photo.jpg",
+  "mimeType": "image/jpeg"
 }
 \`\`\`
 
-**Required for Mode 2:** \`content\`, \`filename\`, \`mimeType\`
+**Required for Mode 3:** \`content\`, \`filename\`, \`mimeType\`
 
 ### Content Types
 - \`IMAGE\` - jpg, png, gif, webp, svg

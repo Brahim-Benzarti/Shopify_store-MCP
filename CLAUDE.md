@@ -26,7 +26,7 @@ npm run db:studio  # Browse SQLite database
 |------|------|---------|
 | `get_shop_info` | Core | Store configuration |
 | `run_graphql_query` | Core | Execute any GraphQL |
-| `upload_file` | Smart | URL or base64 → poll → CDN URL |
+| `upload_file` | Smart | URL/path/base64 → poll → CDN URL |
 | `bulk_export` | Smart | Bulk query → JSONL URL |
 | `bulk_import` | Smart | Staged upload → bulk mutation |
 | `upsert_metaobject` | Smart | Idempotent create/update |

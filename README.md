@@ -269,7 +269,7 @@ Multi-step workflows that handle complexity automatically:
 
 | Tool | Description |
 |------|-------------|
-| `upload_file` | Upload file (URL or base64 content) → poll until ready → return CDN URL |
+| `upload_file` | Upload file (URL, local path, or base64) → poll until ready → return CDN URL |
 | `bulk_export` | Start bulk query → poll completion → return JSONL download URL |
 | `bulk_import` | Staged upload → bulk mutation → poll completion |
 | `upsert_metaobject` | Create or update metaobject by handle (idempotent) |
